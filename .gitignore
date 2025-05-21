@@ -1,0 +1,10 @@
+# Ignore JetBrains IDE settings folder
+.idea/
+
+# Python virtual environment folders
+venv/
+__pycache__/
+
+# OS and editor system files
+.DS_Store
+Thumbs.db
