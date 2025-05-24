@@ -6,6 +6,8 @@ from faker import Faker
 from random import randint
 
 
+
+
 def create_connection():
     try:
         conn = mysql.connector.connect(
@@ -48,21 +50,77 @@ def generate_data_tutor(x, faker):
     data = {}
     for i in range(0, x):
         data[i] = {}
-        data[i]['id'] = faker.uuid4()
+        id = faker.uuid4()
+        data[i]['employee_id'] = id
+        data[i]['tutor_id'] = id
         data[i]['first_name'] = faker.first_name()
-        data[i]['second_name'] = faker.last_name()
+        data[i]['last_name'] = faker.last_name()
         data[i]['language_speciality'] = faker.language_name()
         data[i]['years_of_experience'] = randint(0, 40)
     return data
 
+def get_language(conn, tutor_id):
+    cursor = conn.cursor()
+
+    query = "SELECT language_speciality FROM tutor WHERE tutor_id = %s"
+    cursor.execute(query, (tutor_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    return result[0] if result else None
+
+def generate_data_course(conn, x, faker, tutor_data):
+    data = {}
+    language_school_titles = [
+        "Language through Film",
+        "Literature & Discussion",
+        "Music & Lyrics Lab",
+        "Culture & Customs",
+        "Travel Talk",
+        "Storytelling Circle",
+        "Idioms and Expressions",
+        "Speaking Club",
+        "Fluency Boost",
+        "Debate & Discussion",
+        "Talk with Confidence",
+        "Express Yourself",
+        "Conversation Practice",
+        "Small Talk Strategies",
+        "Language for the Workplace",
+        "Email Writing Workshop",
+        "Presentation Skills",
+        "Negotiation Practice",
+        "Interview Preparation",
+        "Business Communication",
+        "Academic Writing Skills",
+        "Everyday Conversations",
+        "Grammar Essentials",
+        "Mastering Pronunciation",
+        "Confident Writing",
+        "Listening Lab",
+        "Accent Reduction",
+        "Real-Life Dialogues"
+    ]
+    language_level = ["A1", "A2", "B1", "B2", "C1", "C2"]
+    tutor_ids = [tutor['tutor_id'] for tutor in tutor_data.values()]
+    for i in range(0, x):
+        data[i] = {}
+        tutor_id = faker.random_element(tutor_ids)
+        data[i]['course_id'] = faker.uuid4()
+        data[i]['language'] = get_language(conn, tutor_id)
+        data[i]['title'] = faker.random_element(language_school_titles)
+        data[i]['level'] = faker.random_element(language_level)
+        data[i]['tutor'] = tutor_id
+    return data
 
 def generate_data_mentor(x, faker):
     data = {}
     for i in range(0, x):
         data[i] = {}
-        data[i]['id'] = faker.uuid4()
+        id = faker.uuid4()
+        data[i]['employee_id'] = id
+        data[i]['mentor_id'] = id
         data[i]['first_name'] = faker.first_name()
-        data[i]['second_name'] = faker.last_name()
+        data[i]['last_name'] = faker.last_name()
         data[i]['xp_level'] = faker.random_int(0,100)
         data[i]['amount_of_students'] = '0'
     return data
@@ -70,12 +128,12 @@ def generate_data_mentor(x, faker):
 
 def generate_data_student(conn, x, faker, generated_mentor):
     data = {}
-    mentor_ids = [mentor['id'] for mentor in generated_mentor.values()]
+    mentor_ids = [mentor['mentor_id'] for mentor in generated_mentor.values()]
     for i in range(0, x):
         data[i] = {}
-        data[i]['id'] = faker.uuid4()
+        data[i]['student_id'] = faker.uuid4()
         data[i]['first_name'] = faker.first_name()
-        data[i]['second_name'] = faker.last_name()
+        data[i]['last_name'] = faker.last_name()
         data[i]['email'] = faker.email()
         data[i]['age'] = randint(10, 60)
         id_mentor = faker.random_element(mentor_ids)
@@ -98,98 +156,42 @@ def add_student(conn, id_mentor):
 
     cursor.close()
 
-def insert_data_tutor(conn, generated_data):
+
+def insert_sample_data(conn, table_name, generated_data):
     cursor = conn.cursor()
-    for employee in generated_data.values():
-        employee_id = employee['id']
-        first_name = employee['first_name']
-        second_name = employee['second_name']
 
-        query_employee = "INSERT INTO employee (employee_id, first_name, last_name) VALUES (%s, %s, %s)"
-        cursor.execute(query_employee, (employee_id, first_name, second_name))
-
-        language_speciality = employee['language_speciality']
-        years_of_experience = employee['years_of_experience']
-
-        query_tutor = "INSERT INTO tutor (tutor_id, language_speciality, years_of_experience) VALUES (%s, %s, %s)"
-        cursor.execute(query_tutor, (employee_id, language_speciality, years_of_experience))
+    # get column names dynamically from the table schema
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s AND table_schema = 'language_school'", (table_name,))
+    schema = cursor.fetchall()
+    columns = [column[0] for column in schema]
+    columns_str = ', '.join(columns)
+    placeholders = ', '.join(['%s'] * len(columns))
+    query = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
+    temp = [record for record in generated_data.values() if record in columns]
+    for record in generated_data.values():
+        values = tuple(record.get(col) for col in columns)
+        cursor.execute(query, values)
 
     conn.commit()
     cursor.close()
-    print(f"Inserted {len(generated_data)} records into tutor and employee.")
-
-def insert_data_mentor(conn, generated_data):
-    cursor = conn.cursor()
-    for employee in generated_data.values():
-        employee_id = employee['id']
-        first_name = employee['first_name']
-        second_name = employee['second_name']
-
-        query_employee = "INSERT INTO employee (employee_id, first_name, last_name) VALUES (%s, %s, %s)"
-        cursor.execute(query_employee, (employee_id, first_name, second_name))
-
-        xp_level = employee['xp_level']
-        amount_of_students = employee['amount_of_students']
-
-        query_tutor = "INSERT INTO mentor (mentor_id, xp_level, amount_of_students) VALUES (%s, %s, %s)"
-        cursor.execute(query_tutor, (employee_id, xp_level, amount_of_students))
-
-    conn.commit()
-    cursor.close()
-    print(f"Inserted {len(generated_data)} records into mentor and employee.")
-
-def insert_data_student(conn, generated_data):
-    cursor = conn.cursor()
-    for student in generated_data.values():
-        student_id = student['id']
-        first_name = student['first_name']
-        second_name = student['second_name']
-        email = student['email']
-        age = student['age']
-        mentor = student['mentor']
-
-        query = "INSERT INTO student (student_id, first_name, last_name, email, age, mentor) VALUES (%s, %s, %s, %s, %s, %s)"
-        cursor.execute(query, (student_id, first_name, second_name, email, age, mentor))
-
-    conn.commit()
-    cursor.close()
-    print(f"Inserted {len(generated_data)} records into student.")
-
-
-# def insert_sample_data(conn, table_name, generated_data):
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s", (table_name,))
-#     schema = cursor.fetchall()
-#     columns = [column[0] for column in schema]
-#
-#     columns_str = ', '.join(columns)
-#     placeholders = ', '.join(['%s'] * len(columns))
-#     query = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-#
-#     for record in generated_data.values():
-#         values = tuple(record[col] for col in columns)
-#         cursor.execute(query, values)
-#
-#     conn.commit()
-#     cursor.close()
-#     print(f"Inserted {len(generated_data)} records into {table_name}.")
+    print(f"Inserted {len(generated_data)} records into {table_name}.")
 
 
 connection = create_connection()
 delete_data(connection)
 faker = Faker()
 tutor_data = generate_data_tutor(20, faker)
-insert_data_tutor(connection, tutor_data)
+#insert_data_tutor(connection, tutor_data)
+insert_sample_data(connection, 'employee', tutor_data)
+insert_sample_data(connection, 'tutor', tutor_data)
 
 mentor_data = generate_data_mentor(20, faker)
-insert_data_mentor(connection, mentor_data)
+insert_sample_data(connection, 'employee', mentor_data)
+insert_sample_data(connection, 'mentor', mentor_data)
+
 student_data = generate_data_student(connection, 20, faker, mentor_data)
-insert_data_student(connection, student_data)
-# cursor.execute("SELECT * FROM student")
-#
-# rows = cursor.fetchall()
-# for row in rows:
-#     print(row)
-#
-# cursor.close()
+insert_sample_data(connection, 'student', student_data)
+course_data = generate_data_course(connection, 20, faker, tutor_data)
+insert_sample_data(connection, 'course', course_data)
+
 connection.close()
