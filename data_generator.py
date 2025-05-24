@@ -71,7 +71,6 @@ def generate_data_mentor(x, faker):
 def generate_data_student(conn, x, faker, generated_mentor):
     data = {}
     mentor_ids = [mentor['id'] for mentor in generated_mentor.values()]
-    print(mentor_ids)
     for i in range(0, x):
         data[i] = {}
         data[i]['id'] = faker.uuid4()
