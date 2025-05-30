@@ -1,4 +1,6 @@
 # RUN pip install mysql-connector-python for docker
+from datetime import date
+
 import mysql.connector
 from mysql.connector import Error
 from faker import Faker
@@ -68,6 +70,7 @@ def get_language(conn, tutor_id):
     cursor.close()
     return result[0] if result else None
 
+
 def generate_data_course(conn, x, faker, tutor_data):
     data = {}
     language_school_titles = [
@@ -112,6 +115,21 @@ def generate_data_course(conn, x, faker, tutor_data):
         data[i]['tutor'] = tutor_id
     return data
 
+def generate_data_group(x, faker, course_data):
+    course_ids = [course['course_id'] for course in course_data.values()]
+    age_category = ["Adult", "Teenager", "Kids"]
+    data = {}
+    for i in range(0, x):
+        data[i] = {}
+        data[i]['student_group_id'] = faker.uuid4()
+        id_course = faker.random_element(course_ids)
+        data[i]['course_id'] = id_course
+        data[i]['age_category'] = faker.random_element(age_category)
+        data[i]['amount_of_participants'] = 0
+        data[i]['max_participants'] = faker.random_int(5, 15)
+    return data
+
+
 def generate_data_mentor(x, faker):
     data = {}
     for i in range(0, x):
@@ -141,6 +159,26 @@ def generate_data_student(conn, x, faker, generated_mentor):
         add_student(conn, id_mentor)
 
     return data
+
+def generate_data_assigment(x, faker, student_data):
+    data = {}
+    student_ids = [student['student_id'] for student in student_data.values()]
+
+    start_issued = date(2025, 5, 1)
+    end_issued = date(2025, 5, 31)
+    start_due = date(2025, 6, 1)
+    end_due = date(2025, 6, 30)
+
+    for i in range(0, x):
+        data[i] = {}
+        data[i]['assignment_id'] = faker.uuid4()
+        data[i]['date_issued'] = faker.date_between(start_date=start_issued, end_date=end_issued)
+        data[i]['date_due'] = faker.date_between(start_date=start_due, end_date=end_due)
+        data[i]['from_student'] = faker.random_element(student_ids)
+
+    return data
+
+
 def add_student(conn, id_mentor):
     cursor = conn.cursor()
 
@@ -193,5 +231,8 @@ student_data = generate_data_student(connection, 20, faker, mentor_data)
 insert_sample_data(connection, 'student', student_data)
 course_data = generate_data_course(connection, 20, faker, tutor_data)
 insert_sample_data(connection, 'course', course_data)
-
+group_data = generate_data_group(20, faker, course_data)
+insert_sample_data(connection, 'student_group', group_data)
+assigment_data = generate_data_assigment(20, faker, student_data)
+insert_sample_data(connection, 'assignment', assigment_data)
 connection.close()
