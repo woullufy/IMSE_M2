@@ -13,9 +13,9 @@ from random import randint
 def create_connection():
     try:
         conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="LP-278Tg!",
+            host="mariadb",
+            user="flaskuser",
+            password="flaskpass",
             database="language_school"
         )
         print("Successful connection to database!")
@@ -52,7 +52,7 @@ def generate_data_tutor(x, faker):
     data = {}
     for i in range(0, x):
         data[i] = {}
-        id = faker.uuid4()
+        id = f"TU{str(i+1).zfill(4)}"
         data[i]['employee_id'] = id
         data[i]['tutor_id'] = id
         data[i]['first_name'] = faker.first_name()
@@ -108,7 +108,7 @@ def generate_data_course(conn, x, faker, tutor_data):
     for i in range(0, x):
         data[i] = {}
         tutor_id = faker.random_element(tutor_ids)
-        data[i]['course_id'] = faker.uuid4()
+        data[i]['course_id'] = f"CO{str(i+1).zfill(4)}"
         data[i]['language'] = get_language(conn, tutor_id)
         data[i]['title'] = faker.random_element(language_school_titles)
         data[i]['level'] = faker.random_element(language_level)
@@ -121,7 +121,7 @@ def generate_data_group(x, faker, course_data):
     data = {}
     for i in range(0, x):
         data[i] = {}
-        data[i]['student_group_id'] = faker.uuid4()
+        data[i]['student_group_id'] = f"GR{str(i+1).zfill(4)}"
         id_course = faker.random_element(course_ids)
         data[i]['course_id'] = id_course
         data[i]['age_category'] = faker.random_element(age_category)
@@ -134,12 +134,12 @@ def generate_data_mentor(x, faker):
     data = {}
     for i in range(0, x):
         data[i] = {}
-        id = faker.uuid4()
+        id = f"ME{str(i+1).zfill(4)}"
         data[i]['employee_id'] = id
         data[i]['mentor_id'] = id
         data[i]['first_name'] = faker.first_name()
         data[i]['last_name'] = faker.last_name()
-        data[i]['xp_level'] = faker.random_int(0,100)
+        data[i]['xp_level'] = faker.random_int(0, 100)
         data[i]['amount_of_students'] = '0'
     return data
 
@@ -149,7 +149,7 @@ def generate_data_student(conn, x, faker, generated_mentor):
     mentor_ids = [mentor['mentor_id'] for mentor in generated_mentor.values()]
     for i in range(0, x):
         data[i] = {}
-        data[i]['student_id'] = faker.uuid4()
+        data[i]['student_id'] = f"ST{str(i+1).zfill(4)}"
         data[i]['first_name'] = faker.first_name()
         data[i]['last_name'] = faker.last_name()
         data[i]['email'] = faker.email()
@@ -171,7 +171,7 @@ def generate_data_assigment(x, faker, student_data):
 
     for i in range(0, x):
         data[i] = {}
-        data[i]['assignment_id'] = faker.uuid4()
+        data[i]['assignment_id'] = f"AS{str(i+1).zfill(4)}"
         data[i]['date_issued'] = faker.date_between(start_date=start_issued, end_date=end_issued)
         data[i]['date_due'] = faker.date_between(start_date=start_due, end_date=end_due)
         data[i]['from_student'] = faker.random_element(student_ids)

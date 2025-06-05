@@ -1,15 +1,16 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect # need to be installed in docker!
 import mysql.connector
 import uuid
 import subprocess
+import traceback
 
 app = Flask(__name__)
 
 def get_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="flaskuser",
-        password="flaskpass",
+        host="mariadb",                 # <- service name from docker-compose
+        user="root",
+        password="rootpass",
         database="language_school"
     )
 
@@ -19,7 +20,9 @@ def generate_data():
         # Run data_generator.py using subprocess
         subprocess.run(['python', 'data_generator.py'], check=True)
         return redirect('/tables')
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print("Subprocess error: ", e)
+        traceback.print_exc()
         return "Error generating data", 500
     
 @app.route('/tables')
@@ -81,4 +84,4 @@ def add_student():
     return redirect('/')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port = 5000, debug=True)
